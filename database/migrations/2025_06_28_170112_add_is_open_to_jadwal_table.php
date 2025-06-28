@@ -11,11 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('mata_kuliah', function (Blueprint $table) {
-            $table->id();
-            $table->string('kode')->unique();
-            $table->string('nama');
-            $table->timestamps();
+        Schema::table('jadwal', function (Blueprint $table) {
+            $table->boolean('is_open')->default(false)->after('ruangan');
         });
     }
 
@@ -24,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('mata_kuliah');
+        Schema::table('jadwal', function (Blueprint $table) {
+            $table->dropColumn('is_open');
+        });
     }
 };

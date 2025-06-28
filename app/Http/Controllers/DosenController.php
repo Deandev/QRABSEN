@@ -21,13 +21,11 @@ class DosenController extends Controller
 
         // Ambil SEMUA jadwal dosen, urutkan berdasarkan hari dan waktu
         $jadwalDosen = Jadwal::with('mataKuliah')
-                                ->where('dosen_id', $dosenId)
-                                ->orderBy('hari') // Urutkan berdasarkan hari
-                                ->orderBy('waktu_mulai') // Lalu berdasarkan waktu mulai
-                                ->get();
+            ->where('dosen_id', $dosenId)
+            ->orderBy('hari') // Urutkan berdasarkan hari
+            ->orderBy('waktu_mulai') // Lalu berdasarkan waktu mulai
+            ->get();
 
-        // Kita ubah nama variabel dari $jadwalHariIni menjadi $jadwalDosen
-        // agar lebih sesuai dengan isinya yang sekarang menampilkan semua jadwal.
         return view('dosen.dashboard', compact('jadwalDosen'));
     }
 
@@ -39,7 +37,6 @@ class DosenController extends Controller
      */
     public function showJadwalDetail(Jadwal $jadwal)
     {
-        // Pastikan jadwal ini milik dosen yang sedang login
         if ($jadwal->dosen_id !== Auth::user()->dosen->id) {
             abort(403, 'Anda tidak memiliki akses ke jadwal ini.');
         }
@@ -52,11 +49,8 @@ class DosenController extends Controller
             ->where('tanggal', $tanggalHariIni)
             ->get();
 
-        // Jika tidak ada data absensi untuk hari ini, inisialisasi
+        // Jika tidak ada data absensi untuk hari ini, inisialisasi dengan 'tidak_hadir'
         if ($absensiMahasiswa->isEmpty()) {
-            // Ambil semua mahasiswa yang bisa terkait dengan mata kuliah ini
-            // Untuk demo tugas, kita asumsikan semua mahasiswa bisa masuk ke semua kelas
-            // Di produksi, Anda mungkin perlu tabel pivot mahasiswa_mata_kuliah atau mahasiswa_jadwal
             $mahasiswaTerdaftar = \App\Models\Mahasiswa::all();
             foreach ($mahasiswaTerdaftar as $mhs) {
                 Absensi::firstOrCreate(
@@ -66,7 +60,7 @@ class DosenController extends Controller
                         'tanggal' => $tanggalHariIni,
                     ],
                     [
-                        'status' => 'pending',
+                        'status' => 'tidak_hadir', // Inisialisasi menjadi 'tidak_hadir'
                         'waktu_scan' => null
                     ]
                 );
@@ -84,7 +78,6 @@ class DosenController extends Controller
     // Fungsi scanAbsensi tidak perlu diubah
     public function scanAbsensi(Request $request, Jadwal $jadwal)
     {
-        // ... kode scanAbsensi tetap sama ...
         if ($jadwal->dosen_id !== Auth::user()->dosen->id) {
             return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
         }
@@ -104,12 +97,13 @@ class DosenController extends Controller
         }
 
         $absensi = Absensi::where('mahasiswa_id', $mahasiswa->id)
-                            ->where('jadwal_id', $jadwal->id)
-                            ->where('tanggal', $tanggalHariIni)
-                            ->first();
+            ->where('jadwal_id', $jadwal->id)
+            ->where('tanggal', $tanggalHariIni)
+            ->first();
 
         if ($absensi) {
-            if ($absensi->status === 'pending' || $absensi->status === 'tidak_hadir') {
+            // Hanya perbarui jika statusnya masih 'tidak_hadir'
+            if ($absensi->status === 'tidak_hadir') {
                 $absensi->status = 'hadir';
                 $absensi->waktu_scan = $waktuScan;
                 $absensi->save();
@@ -125,6 +119,7 @@ class DosenController extends Controller
                 return response()->json(['success' => false, 'message' => $mahasiswa->user->nama . ' sudah absen sebelumnya.'], 409);
             }
         } else {
+            // Fallback: Jika record absensi belum ada, buat baru dengan status 'hadir'
             $absensi = Absensi::create([
                 'mahasiswa_id' => $mahasiswa->id,
                 'jadwal_id' => $jadwal->id,
@@ -141,5 +136,41 @@ class DosenController extends Controller
                 'waktu_scan' => $absensi->waktu_scan->format('H:i:s')
             ]);
         }
+    }
+
+    /**
+     * Membuka kelas untuk absensi.
+     *
+     * @param  \App\Models\Jadwal  $jadwal
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function openClass(Jadwal $jadwal)
+    {
+        if ($jadwal->dosen_id !== Auth::user()->dosen->id) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
+        }
+
+        $jadwal->is_open = true;
+        $jadwal->save();
+
+        return response()->json(['success' => true, 'message' => 'Kelas berhasil dibuka.', 'is_open' => true]);
+    }
+
+    /**
+     * Menutup kelas untuk absensi.
+     *
+     * @param  \App\Models\Jadwal  $jadwal
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function closeClass(Jadwal $jadwal)
+    {
+        if ($jadwal->dosen_id !== Auth::user()->dosen->id) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
+        }
+
+        $jadwal->is_open = false;
+        $jadwal->save();
+
+        return response()->json(['success' => true, 'message' => 'Kelas berhasil ditutup.', 'is_open' => false]);
     }
 }

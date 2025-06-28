@@ -1,176 +1,67 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Detail Jadwal - {{ $jadwal->mataKuliah->nama }}</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <style>
-        body { font-family: Arial, sans-serif; background-color: #e9ebee; margin: 0; padding: 20px; }
-        .container { max-width: 1000px; margin: 20px auto; background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h1, h2 { color: #333; text-align: center; margin-bottom: 20px; }
-        .header-info { text-align: center; margin-bottom: 30px; }
-        .header-info p { margin: 5px 0; color: #555; }
-        .btn-back { display: inline-block; background-color: #6c757d; color: white; padding: 8px 15px; border-radius: 5px; text-decoration: none; margin-bottom: 20px; }
-        .btn-back:hover { background-color: #5a6268; }
+@extends('layouts.app') {{-- Menggunakan layout utama --}}
 
-        .absensi-section {
-            display: flex;
-            gap: 30px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        .mahasiswa-list-card {
-            flex: 2; /* Akan mengambil 2 bagian dari 3 */
-            min-width: 300px;
-            background-color: #f9f9f9;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-        .mahasiswa-list-card h3 { margin-top: 0; color: #007bff; }
-        .mahasiswa-list { list-style: none; padding: 0; margin: 0; }
-        .mahasiswa-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px dashed #eee;
-        }
-        .mahasiswa-item:last-child { border-bottom: none; }
-        .mahasiswa-item span { color: #333; }
-        .mahasiswa-status {
-            font-weight: bold;
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-size: 0.9em;
-        }
-        .status-pending { background-color: #ffc107; color: #333; } /* Kuning */
-        .status-hadir { background-color: #28a745; color: white; }    /* Hijau */
-        .status-tidak_hadir { background-color: #dc3545; color: white; } /* Merah */
+@section('title', 'Detail Jadwal - ' . $jadwal->mataKuliah->nama) {{-- Menetapkan judul halaman --}}
 
+@section('css')
+    {{-- Tidak ada CSS inline di sini, semua sudah di styles.css --}}
+@endsection
 
-        .scanner-card {
-            flex: 1; /* Akan mengambil 1 bagian dari 3 */
-            min-width: 300px;
-            background-color: #f9f9f9;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            text-align: center;
-        }
-        .scanner-card h3 { margin-top: 0; color: #007bff; }
-        #qr-scanner-container {
-            width: 100%;
-            max-width: 400px;
-            margin: 0 auto;
-            position: relative;
-        }
-        #qr-scanner-container video {
-            width: 100%;
-            height: auto;
-            border: 2px solid #ccc;
-            border-radius: 8px;
-        }
-        #qr-scanner-container canvas {
-            display: none; /* Kanvas untuk hasil scan, biasanya disembunyikan */
-        }
-        .open-class-btn {
-            background-color: #007bff;
-            color: white;
-            padding: 12px 25px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1.1em;
-            margin-bottom: 15px;
-            transition: background-color 0.3s ease;
-        }
-        .open-class-btn:hover {
-            background-color: #0056b3;
-        }
-        #timer-display {
-            font-size: 1.5em;
-            font-weight: bold;
-            color: #28a745; /* Hijau */
-            margin-top: 15px;
-        }
-        #scanner-status {
-            margin-top: 10px;
-            font-style: italic;
-            color: #777;
-        }
-        .hidden { display: none !important; }
+@section('content') {{-- Bagian konten spesifik halaman ini --}}
+<div class="container">
+    <a href="{{ route('dosen.dashboard') }}" class="btn btn-secondary btn-back"><i class="fas fa-arrow-left"></i> Kembali ke
+        Dasbor</a>
+    <h1>Detail Jadwal Mata Kuliah</h1>
 
-        .scan-result-message {
-            margin-top: 15px;
-            padding: 10px;
-            border-radius: 5px;
-            font-weight: bold;
-        }
-        .scan-result-success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .scan-result-error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <a href="{{ route('dosen.dashboard') }}" class="btn-back"><i class="fas fa-arrow-left"></i> Kembali ke Dasbor</a>
-        <h1>Detail Jadwal Mata Kuliah</h1>
+    <div class="header-info">
+        <p><strong>Mata Kuliah:</strong> {{ $jadwal->mataKuliah->nama }} ({{ $jadwal->mataKuliah->kode }})</p>
+        <p><strong>Hari:</strong> {{ $jadwal->hari }}</p>
+        <p><strong>Waktu:</strong> {{ \Carbon\Carbon::parse($jadwal->waktu_mulai)->format('H:i') }} -
+            {{ \Carbon\Carbon::parse($jadwal->waktu_selesai)->format('H:i') }}</p>
+        <p><strong>Ruangan:</strong> {{ $jadwal->ruangan ?? 'Tidak ada' }}</p>
+    </div>
 
-        <div class="header-info">
-            <p><strong>Mata Kuliah:</strong> {{ $jadwal->mataKuliah->nama }} ({{ $jadwal->mataKuliah->kode }})</p>
-            <p><strong>Hari:</strong> {{ $jadwal->hari }}</p>
-            <p><strong>Waktu:</strong> {{ \Carbon\Carbon::parse($jadwal->waktu_mulai)->format('H:i') }} - {{ \Carbon\Carbon::parse($jadwal->waktu_selesai)->format('H:i') }}</p>
-            <p><strong>Ruangan:</strong> {{ $jadwal->ruangan ?? 'Tidak ada' }}</p>
+    <hr>
+
+    <div class="absensi-section">
+        <div class="mahasiswa-list-card">
+            <h3>Daftar Mahasiswa</h3>
+            <ul class="mahasiswa-list" id="mahasiswa-absensi-list">
+                @forelse ($absensiMahasiswa as $absensi)
+                    <li class="mahasiswa-item" data-nim="{{ $absensi->mahasiswa->nim }}">
+                        {{-- Menampilkan nama dan NIM mahasiswa --}}
+                        <span>{{ $absensi->mahasiswa->user->nama }} ({{ $absensi->mahasiswa->nim }})</span>
+                        <span class="mahasiswa-status status-{{ $absensi->status }}" id="status-{{ $absensi->mahasiswa->nim }}">
+                            {{ ucfirst(str_replace('_', ' ', $absensi->status)) }}
+                            @if ($absensi->status == 'hadir' && $absensi->waktu_scan)
+                                ({{ \Carbon\Carbon::parse($absensi->waktu_scan)->format('H:i:s') }})
+                            @endif
+                        </span>
+                    </li>
+                @empty
+                    <p style="text-align: center; font-style: italic;">Tidak ada mahasiswa terdaftar untuk jadwal ini.</p>
+                @endforelse
+            </ul>
         </div>
 
-        <hr>
-
-        <div class="absensi-section">
-            <div class="mahasiswa-list-card">
-                <h3>Daftar Mahasiswa</h3>
-                <ul class="mahasiswa-list" id="mahasiswa-absensi-list">
-                    @forelse ($absensiMahasiswa as $absensi)
-                        <li class="mahasiswa-item" data-nim="{{ $absensi->mahasiswa->nim }}">
-                            <span>{{ $absensi->mahasiswa->user->nama }} ({{ $absensi->mahasiswa->nim }})</span>
-                            <span class="mahasiswa-status status-{{ $absensi->status }}" id="status-{{ $absensi->mahasiswa->nim }}">
-                                {{ ucfirst(str_replace('_', ' ', $absensi->status)) }}
-                                @if ($absensi->status == 'hadir' && $absensi->waktu_scan)
-                                    ({{ \Carbon\Carbon::parse($absensi->waktu_scan)->format('H:i:s') }})
-                                @endif
-                            </span>
-                        </li>
-                    @empty
-                        <p style="text-align: center; font-style: italic;">Tidak ada mahasiswa terdaftar untuk jadwal ini.</p>
-                    @endforelse
-                </ul>
-            </div>
-
-            <div class="scanner-card">
-                <h3>QR Absensi</h3>
-                <button id="open-class-btn" class="open-class-btn">Buka Kelas</button>
-                <div id="qr-scanner-section" class="hidden">
-                    <div id="qr-scanner-container">
-                        <video id="qr-video"></video>
-                    </div>
-                    <p id="timer-display"></p>
-                    <p id="scanner-status">Memulai scanner...</p>
-                    <div id="scan-result" class="scan-result-message hidden"></div>
+        <div class="scanner-card">
+            <h3>QR Absensi</h3>
+            {{-- Tambahkan kelas 'btn' agar styling umum dari styles.css diterapkan --}}
+            <button id="open-class-btn" class="open-class-btn btn">Buka Kelas</button>
+            <div id="qr-scanner-section" class="hidden">
+                <div id="qr-scanner-container">
+                    <video id="qr-video"></video>
                 </div>
+                <p id="timer-display"></p>
+                <p id="scanner-status">Memulai scanner...</p>
+                <div id="scan-result" class="scan-result-message hidden"></div>
             </div>
         </div>
     </div>
+</div>
+@endsection
 
+@section('js')
+    {{-- Script JavaScript Instascan dan SweetAlert2 tetap di sini --}}
     <script src="https://rawgit.com/schmich/instascan-builds/master/instascan.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
@@ -299,99 +190,185 @@
                 },
                 body: JSON.stringify({ mahasiswa_nim_qr: nimMahasiswa })
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Absen Berhasil!',
-                        text: data.message
-                    });
-                    // Perbarui status di daftar mahasiswa secara dinamis
-                    const studentItem = document.querySelector(`.mahasiswa-item[data-nim="${nimMahasiswa}"]`);
-                    if (studentItem) {
-                        const statusSpan = studentItem.querySelector('.mahasiswa-status');
-                        statusSpan.className = 'mahasiswa-status status-hadir';
-                        statusSpan.textContent = `Hadir (${data.waktu_scan})`;
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Absen Berhasil!',
+                            text: data.message
+                        });
+                        // Perbarui status di daftar mahasiswa secara dinamis
+                        const studentItem = document.querySelector(`.mahasiswa-item[data-nim="${nimMahasiswa}"]`);
+                        if (studentItem) {
+                            const statusSpan = studentItem.querySelector('.mahasiswa-status');
+                            statusSpan.className = 'mahasiswa-status status-hadir';
+                            statusSpan.textContent = `Hadir (${data.waktu_scan})`;
+                        }
+                        scanResultDiv.classList.remove('hidden', 'scan-result-error');
+                        scanResultDiv.classList.add('scan-result-success');
+                        scanResultDiv.textContent = data.message;
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Absen Gagal!',
+                            text: data.message
+                        });
+                        scanResultDiv.classList.remove('hidden', 'scan-result-success');
+                        scanResultDiv.classList.add('scan-result-error');
+                        scanResultDiv.textContent = data.message;
                     }
-                    scanResultDiv.classList.remove('hidden', 'scan-result-error');
-                    scanResultDiv.classList.add('scan-result-success');
-                    scanResultDiv.textContent = data.message;
-                } else {
+                })
+                .catch(error => {
+                    console.error('Error:', error);
                     Swal.fire({
                         icon: 'error',
-                        title: 'Absen Gagal!',
-                        text: data.message
+                        title: 'Terjadi Kesalahan!',
+                        text: 'Gagal memproses absensi. Silakan coba lagi.'
                     });
                     scanResultDiv.classList.remove('hidden', 'scan-result-success');
                     scanResultDiv.classList.add('scan-result-error');
-                    scanResultDiv.textContent = data.message;
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Terjadi Kesalahan!',
-                    text: 'Gagal memproses absensi. Silakan coba lagi.'
+                    scanResultDiv.textContent = 'Gagal memproses absensi.';
                 });
-                scanResultDiv.classList.remove('hidden', 'scan-result-success');
-                scanResultDiv.classList.add('scan-result-error');
-                scanResultDiv.textContent = 'Gagal memproses absensi.';
-            });
         }
 
         // Fungsi untuk membuka kelas (mengaktifkan scanner dan timer)
         function openClass() {
-            if (!waktuKelasBerjalan) {
-                hitungDurasiKelas(); // Hitung ulang durasi jika belum
-                waktuSisaDetik = durasiKelasDetik; // Set waktu sisa ke durasi penuh
-                startTimer();
-                startScanner();
-                qrScannerSection.classList.remove('hidden');
-                openClassBtn.textContent = 'Tutup Kelas';
-                openClassBtn.style.backgroundColor = '#dc3545'; // Warna merah untuk tutup
-                openClassBtn.removeEventListener('click', openClass); // Hapus listener lama
-                openClassBtn.addEventListener('click', closeClass); // Tambahkan listener baru
-                waktuKelasBerjalan = true;
+            // Perlu melakukan AJAX request ke backend untuk update status 'is_open'
+            fetch("{{ route('dosen.jadwal.open', $jadwal->id) }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ is_open: true })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (!waktuKelasBerjalan) {
+                        hitungDurasiKelas(); // Hitung ulang durasi jika belum
+                        waktuSisaDetik = durasiKelasDetik; // Set waktu sisa ke durasi penuh
+                        startTimer();
+                        startScanner();
+                        qrScannerSection.classList.remove('hidden');
+                        openClassBtn.textContent = 'Tutup Kelas';
+                        openClassBtn.style.backgroundColor = '#dc3545'; // Warna merah untuk tutup
+                        openClassBtn.removeEventListener('click', openClass); // Hapus listener lama
+                        openClassBtn.addEventListener('click', closeClass); // Tambahkan listener baru
+                        waktuKelasBerjalan = true;
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Kelas Dibuka!',
+                            text: 'QR Scanner aktif dan waktu absen dimulai.'
+                        });
+                    }
+                } else {
+                     Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal Membuka Kelas',
+                        text: data.message || 'Terjadi kesalahan saat membuka kelas.'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error opening class:', error);
                 Swal.fire({
-                    icon: 'success',
-                    title: 'Kelas Dibuka!',
-                    text: 'QR Scanner aktif dan waktu absen dimulai.'
+                    icon: 'error',
+                    title: 'Terjadi Kesalahan!',
+                    text: 'Gagal berkomunikasi dengan server saat membuka kelas.'
                 });
-            }
+            });
         }
 
         // Fungsi untuk menutup kelas (menghentikan scanner dan timer)
         function closeClass() {
-            if (waktuKelasBerjalan) {
-                stopScanner();
-                clearInterval(timerInterval);
-                qrScannerSection.classList.add('hidden');
-                openClassBtn.textContent = 'Buka Kelas';
-                openClassBtn.style.backgroundColor = '#007bff'; // Warna biru untuk buka
-                openClassBtn.removeEventListener('click', closeClass); // Hapus listener lama
-                openClassBtn.addEventListener('click', openClass); // Tambahkan listener baru
-                waktuKelasBerjalan = false;
+            // Perlu melakukan AJAX request ke backend untuk update status 'is_open'
+            fetch("{{ route('dosen.jadwal.close', $jadwal->id) }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ is_open: false })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (waktuKelasBerjalan) {
+                        stopScanner();
+                        clearInterval(timerInterval);
+                        qrScannerSection.classList.add('hidden');
+                        openClassBtn.textContent = 'Buka Kelas';
+                        openClassBtn.style.backgroundColor = '#007bff';
+                        openClassBtn.removeEventListener('click', closeClass);
+                        openClassBtn.addEventListener('click', openClass);
+                        waktuKelasBerjalan = false;
 
-                // Set mahasiswa yang statusnya masih 'pending' menjadi 'tidak_hadir'
-                Array.from(absensiList.children).forEach(item => {
-                    const statusSpan = item.querySelector('.mahasiswa-status');
-                    if (statusSpan.classList.contains('status-pending')) {
-                        statusSpan.classList.remove('status-pending');
-                        statusSpan.classList.add('status-tidak_hadir');
-                        statusSpan.textContent = 'Tidak Hadir';
-
-                        // Secara opsional, kirim update ke backend untuk menandai mereka tidak hadir
-                        // Ini bisa dilakukan secara batch untuk efisiensi
-                        // fetch('/api/update-absensi-tidak-hadir', { method: 'POST', body: JSON.stringify({ jadwal_id: {{ $jadwal->id }}, student_nim: item.dataset.nim }) })
+                        Array.from(absensiList.children).forEach(item => {
+                            const nim = item.dataset.nim;
+                            const statusSpan = item.querySelector('.mahasiswa-status');
+                            if (!statusSpan.classList.contains('status-hadir')) {
+                                statusSpan.classList.remove('status-pending');
+                                statusSpan.classList.add('status-tidak_hadir');
+                                statusSpan.textContent = 'Tidak Hadir';
+                            }
+                        });
+                        Swal.fire({
+                            icon: 'info',
+                            title: 'Kelas Ditutup',
+                            text: 'QR Scanner dinonaktifkan.'
+                        });
                     }
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal Menutup Kelas',
+                        text: data.message || 'Terjadi kesalahan saat menutup kelas.'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error closing class:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Terjadi Kesalahan!',
+                    text: 'Gagal berkomunikasi dengan server saat menutup kelas.'
                 });
-            }
+            });
         }
 
-        // Inisialisasi: tambahkan event listener untuk tombol "Buka Kelas"
-        openClassBtn.addEventListener('click', openClass);
+
+        // Inisialisasi:
+        // Cek status `is_open` awal dari server saat halaman dimuat
+        const initialIsOpen = {{ $jadwal->is_open ? 'true' : 'false' }};
+
+        document.addEventListener('DOMContentLoaded', () => {
+            waktuKelasBerjalan = initialIsOpen;
+            // Setel teks dan warna tombol sesuai status awal
+            if (waktuKelasBerjalan) {
+                openClassBtn.textContent = 'Tutup Kelas';
+                openClassBtn.style.backgroundColor = '#dc3545'; // Merah
+                qrScannerSection.classList.remove('hidden');
+                // Mulai scanner dan timer jika kelas sudah dibuka
+                hitungDurasiKelas();
+                waktuSisaDetik = durasiKelasDetik;
+                startTimer();
+                startScanner();
+            } else {
+                openClassBtn.textContent = 'Buka Kelas';
+                openClassBtn.style.backgroundColor = '#007bff'; // Biru
+                qrScannerSection.classList.add('hidden');
+            }
+
+            // Tambahkan event listener sesuai status awal
+            if (waktuKelasBerjalan) {
+                openClassBtn.addEventListener('click', closeClass);
+            } else {
+                openClassBtn.addEventListener('click', openClass);
+            }
+        });
+
 
         // Jika ada error dari server (misal, validasi), tampilkan
         @if (session('error'))
@@ -401,10 +378,5 @@
                 text: '{{ session('error') }}'
             });
         @endif
-
-        // Optional: Atur agar kelas otomatis terbuka jika sudah waktunya atau sebelumnya pernah dibuka
-        // Anda mungkin perlu menambahkan kolom di tabel jadwal untuk status 'kelas_dibuka'
-        // untuk persistensi status antar refresh halaman. Untuk saat ini, kita biarkan manual.
     </script>
-</body>
-</html>
+@endsection

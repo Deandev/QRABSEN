@@ -33,6 +33,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/dashboard', [DosenController::class, 'dashboard'])->name('dashboard');
         Route::get('/jadwal/{jadwal}', [DosenController::class, 'showJadwalDetail'])->name('jadwal.detail');
         Route::post('/jadwal/{jadwal}/scan', [DosenController::class, 'scanAbsensi'])->name('jadwal.scan');
+        Route::post('/jadwal/{jadwal}/open', [DosenController::class, 'openClass'])->name('jadwal.open'); // New route
+        Route::post('/jadwal/{jadwal}/close', [DosenController::class, 'closeClass'])->name('jadwal.close'); // New route
     });
 
     // Grup rute untuk Mahasiswa

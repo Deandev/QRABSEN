@@ -13,14 +13,14 @@ return new class extends Migration
     {
         Schema::create('absensi', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('mahasiswa_id')->constrained('mahasiswa')->onDelete('cascade'); // Foreign key ke tabel mahasiswa
-            $table->foreignId('jadwal_id')->constrained('jadwal')->onDelete('cascade'); // Foreign key ke tabel jadwal
-            $table->date('tanggal'); // Tanggal absensi
-            $table->time('waktu_scan')->nullable(); // Waktu QR di-scan
-            $table->enum('status', ['pending', 'hadir', 'tidak_hadir'])->default('pending'); // pending (belum absen), hadir, tidak_hadir
+            $table->foreignId('mahasiswa_id')->constrained('mahasiswa')->onDelete('cascade');
+            $table->foreignId('jadwal_id')->constrained('jadwal')->onDelete('cascade');
+            $table->date('tanggal');
+            $table->time('waktu_scan')->nullable();
+            // Ubah enum: hilangkan 'pending', tambahkan default 'tidak_hadir'
+            $table->enum('status', ['hadir', 'tidak_hadir'])->default('tidak_hadir');
             $table->timestamps();
 
-            // Pastikan satu mahasiswa hanya bisa absen sekali untuk satu jadwal pada tanggal tertentu
             $table->unique(['mahasiswa_id', 'jadwal_id', 'tanggal']);
         });
     }

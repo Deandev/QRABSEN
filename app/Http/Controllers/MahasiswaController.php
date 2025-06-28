@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Jadwal;
 use App\Models\Absensi;
 use Carbon\Carbon;
-use SimpleSoftwareIO\QrCode\Facades\QrCode; // Import facade QrCode
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class MahasiswaController extends Controller
 {
@@ -18,28 +18,37 @@ class MahasiswaController extends Controller
      */
     public function dashboard()
     {
-        $mahasiswaId = Auth::user()->mahasiswa->id; // Ambil ID mahasiswa yang sedang login
-        $hariIni = Carbon::now()->isoFormat('dddd'); // Dapatkan nama hari saat ini (e.g., Senin, Selasa)
+        $mahasiswa = Auth::user()->mahasiswa; // Ambil objek mahasiswa
+        $mahasiswaId = $mahasiswa->id;
+        $tanggalHariIni = Carbon::today()->toDateString();
 
-        // Ambil semua jadwal mata kuliah untuk hari ini (atau semua jadwal jika kita abaikan hari)
-        // Untuk demo, kita tampilkan semua jadwal yang ada, tidak peduli hari ini
+        // Ambil semua jadwal mata kuliah (atau filter sesuai kebutuhan)
         $jadwalMahasiswa = Jadwal::with(['mataKuliah', 'dosen.user'])
-                                    // ->where('hari', $hariIni) // Jika ingin hanya jadwal hari ini
                                     ->orderBy('hari')
                                     ->orderBy('waktu_mulai')
                                     ->get();
 
-        // Anda bisa menambahkan filter agar hanya jadwal yang sesuai dengan mahasiswa
-        // Jika ada relasi mahasiswa_mata_kuliah atau mahasiswa_jadwal
+        // Inisialisasi atau perbarui status absensi untuk setiap jadwal
+        foreach ($jadwalMahasiswa as $jadwal) {
+            // Coba temukan record absensi untuk mahasiswa, jadwal, dan tanggal ini
+            $absensi = Absensi::firstOrCreate(
+                [
+                    'mahasiswa_id' => $mahasiswaId,
+                    'jadwal_id' => $jadwal->id,
+                    'tanggal' => $tanggalHariIni,
+                ],
+                [
+                    'status' => 'tidak_hadir', // Default status jika record baru dibuat
+                    'waktu_scan' => null
+                ]
+            );
+            // Simpan status absensi yang ditemukan/dibuat ke dalam objek jadwal
+            // Agar bisa diakses di view
+            $jadwal->absensi_status_hari_ini = $absensi->status;
+            $jadwal->absensi_waktu_scan_hari_ini = $absensi->waktu_scan;
+        }
 
-        // Contoh status absensi mahasiswa untuk jadwal hari ini
-        // Ini akan digunakan untuk menampilkan status di card jadwal
-        $absensiHariIni = Absensi::where('mahasiswa_id', $mahasiswaId)
-                                ->where('tanggal', Carbon::today()->toDateString())
-                                ->get()
-                                ->keyBy('jadwal_id'); // Kunci koleksi berdasarkan jadwal_id
-
-        return view('mahasiswa.dashboard', compact('jadwalMahasiswa', 'absensiHariIni'));
+        return view('mahasiswa.dashboard', compact('jadwalMahasiswa'));
     }
 
     /**
@@ -53,28 +62,33 @@ class MahasiswaController extends Controller
         $mahasiswa = Auth::user()->mahasiswa;
         $tanggalHariIni = Carbon::today()->toDateString();
 
-        // Cek apakah ada record absensi pending untuk mahasiswa, jadwal, dan hari ini
+        // Check if the class is currently open for attendance
+        if (!$jadwal->is_open) {
+            return redirect()->back()->with('error', 'QR Code hanya dapat di-generate saat kelas dibuka oleh dosen.');
+        }
+
+        // Ambil record absensi untuk mahasiswa, jadwal, dan hari ini.
+        // Asumsi record sudah ada karena diinisialisasi di dashboard().
         $absensi = Absensi::where('mahasiswa_id', $mahasiswa->id)
                             ->where('jadwal_id', $jadwal->id)
                             ->where('tanggal', $tanggalHariIni)
                             ->first();
 
-        // Jika tidak ada atau statusnya bukan 'pending', bisa arahkan kembali
-        if (!$absensi || $absensi->status !== 'pending') {
-            return redirect()->back()->with('error', 'Anda tidak dapat absen untuk jadwal ini saat ini.');
+        // Jika ada record absensi dan statusnya sudah 'hadir', beri pesan peringatan
+        if ($absensi && $absensi->status === 'hadir') {
+            return redirect()->back()->with('error', 'Anda sudah berhasil absen untuk mata kuliah ini.');
         }
 
-        // Data yang akan dienkripsi dalam QR Code adalah NIM mahasiswa
-        // Dosen akan menscan QR ini untuk mendapatkan NIM
+        // Jika record absensi belum ada (seharusnya tidak terjadi jika fungsi dashboard dipanggil)
+        // atau statusnya tidak 'tidak_hadir', maka kita tidak bisa generate QR.
+        // Ini sebagai fallback, memastikan hanya status 'tidak_hadir' yang bisa generate QR.
+        if (!$absensi || $absensi->status !== 'tidak_hadir') {
+             return redirect()->back()->with('error', 'Anda tidak dapat absen untuk jadwal ini saat ini.');
+        }
+
         $dataQrCode = $mahasiswa->nim;
-
-        // Generate QR Code sebagai SVG (Skalable Vector Graphics)
         $qrCode = QrCode::size(300)->generate($dataQrCode);
-
-        // Anda bisa menambahkan logika untuk memastikan QR hanya berlaku dalam durasi tertentu
-        // Atau hanya bisa di-generate jika kelas belum tertutup oleh dosen.
-        // Untuk tugas, kita asumsikan QR bisa di-generate kapan saja untuk jadwal yang pending.
 
         return view('mahasiswa.qr-code', compact('jadwal', 'qrCode', 'mahasiswa'));
     }
-}
+}   

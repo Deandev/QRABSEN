@@ -18,6 +18,7 @@ class Jadwal extends Model
         'waktu_mulai',
         'waktu_selesai',
         'ruangan',
+        'is_open', // Add this line
     ];
 
     // Relasi ke MataKuliah
